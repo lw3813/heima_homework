@@ -1,0 +1,70 @@
+'''
+黑马课程第三课作业
+姓名： 柳伟
+工号：11812
+部门：EPG
+'''
+#导入库
+import pandas as pd
+from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+#读取数据
+data = pd.read_csv('car_data.csv',encoding="gbk")
+train_x = data[['地区','人均GDP','城镇人口比重','交通工具消费价格指数','百户拥有汽车量']]
+#print(train_x)
+
+#提取地区
+values = train_x['地区']
+#print(values)
+
+#地区one-hot编码
+label_encoder = LabelEncoder()
+integer_encoded = list(label_encoder.fit_transform(values))
+#print(type(train_x))
+
+#地区one-hot编码添加进dataframe
+train_x['one-hot'] = integer_encoded
+train_x1 = train_x[['人均GDP','城镇人口比重','交通工具消费价格指数','百户拥有汽车量','one-hot']] #增加one-hot列，去除地区列
+# print(train_x1)
+
+# 规范化到【0，1】空间
+min_max_scaler = preprocessing.MinMaxScaler()
+train_x1 = min_max_scaler.fit_transform(train_x1)
+#print(train_x1)
+
+#手肘法分析
+sse = []
+for k in range(1,11):
+    #kmeans算法
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(train_x1)
+    #计算inertia簇内误差平方和
+    sse.append(kmeans.inertia_)
+x = range(1,11)
+plt.xlabel('K')
+plt.ylabel('SSE')
+plt.plot(x,sse,'o-')
+#plt.show()
+
+#手肘法分析，K为4，5，6比较好，分别比较分析结果
+#n_clusters = 4
+n_clusters = 5
+#n_clusters = 6
+kmeans = KMeans(n_clusters)
+kmeans.fit(train_x1)
+predict_y = kmeans.predict(train_x1)
+train_x['分类'] = predict_y #将分类数据列添加进train_x
+#print(train_x)
+
+#同一个类别城市分别显示，分析K最佳值
+for i in range(n_clusters):
+    print(train_x.loc[train_x['分类']==i])
+'''
+分成四类：天津和上海一组，北京、内蒙古、江苏、浙江、山东和广东一组
+分成五类：天津和上海一组，北京、江苏、浙江、山东和广东一组
+分成六类：北京单独拆分出来
+综合考虑，分成五类最好
+'''
