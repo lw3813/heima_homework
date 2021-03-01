@@ -1,0 +1,67 @@
+"""
+# L2 黑马课程作业
+# 姓名：柳伟
+# 工号：11812
+# 部门：EPG
+# car_complain
+"""
+# -*- coding: utf-8 -*- 
+# 爬区车质网数据并进行分析
+# 针对静态网页爬区代码
+# 导入库
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import numpy as np
+import time
+from _codecs import encode
+from scrapy.utils.versions import scrapy_components_versions
+
+# 数据采集
+# 获取网页
+def extract_url(url):
+    # 得到页面的内容
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'}
+    html = requests.get(url,headers=headers,timeout=10)
+    #html.encoding = 'utf-8'
+    #content = BeautifulSoup(html.content,'lxm')
+    content = html.text #获得服务器的返回值
+    # 通过content创建BeautifulSoup对象
+    soup = BeautifulSoup(content, 'html.parser')  #html.parser解析方式
+    return soup
+
+# 翻页获取数据
+def multi_pages(base_url):
+    # 定义存储数据结构列名
+    data_columns = ['id','brand','car_model','type','problem','data_time','status']
+    car_complain = pd.DataFrame(columns=data_columns)
+    for i in range(11):
+        url = base_url + str(i + 1) + '.shtml'
+        extract_content = extract_url(url)
+        # print(extract_content.title.string)
+        div_content = extract_content.find('div', class_="tslb_b") #找到可以区分需求数据的标识
+        tr_content = div_content.find_all('tr')
+        for td in tr_content: # 按行提取数据
+            dic = {}
+            td_list = td.find_all('td')
+            if len(td_list) > 0:
+                id, brand, car_model, type, problem, data_time, status = td_list[0].text,\
+                td_list[1].text,td_list[2].text,td_list[3].text,td_list[4].text,td_list[6].text,td_list[7].text
+                dic['id'],dic['brand'],dic['car_model'],dic['type'],dic['problem'],dic['data_time'],dic['status'] = id,\
+                 brand, car_model, type, problem, data_time, status
+                car_complain = car_complain.append(dic, ignore_index=True)
+        time.sleep(1) #设置休眠时间
+        print('爬取第' + str(i+1) + '页')
+    return car_complain
+    
+# 数据存储
+def save_data(data,dir):
+    data.to_csv(dir,encoding = 'utf_8_sig') 
+       
+if __name__ == "__main__":
+    
+    # 获取信息的初始url链接，找寻第一页和后面页面的地址规律
+    base_url = 'http://www.12365auto.com/zlts/0-0-0-0-0-0_0-0-0-0-0-0-0-'
+    scrapy_data = multi_pages(base_url)
+    dir = './complain_data_scrapy.csv'
+    save_data(scrapy_data, dir)
