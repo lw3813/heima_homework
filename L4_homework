@@ -1,0 +1,49 @@
+# encoding=utf-8
+# coding=utf-8
+# -*- coding:utf-8 -*-
+
+#导入包
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from efficient_apriori import apriori, itemsets
+import time
+import operator
+#from mlxtend.frequent_patterns import apriori
+#from mlxtend.frequent_patterns import association_rules
+
+# 采用efficient_apriori工具包
+def rule1(data,min_support,min_confidence):
+    start = time.time() #计算用时
+    # 矩阵维度大小
+    data_shape = data.shape
+    m = data_shape[0] - 1 #矩阵行数
+    n = data_shape[1] - 1 #矩阵列数
+    
+    # 数据变成transaction一维数组形式
+    transaction = []
+    for rows in range(m):
+        temp = []
+        for columns in range(n):
+            if str(data.values[rows,columns]) != 'nan':
+                temp.append(str(data.values[rows,columns]))
+        transaction.append(temp)
+    #print(transaction)
+
+    # 挖掘频繁项集和频繁规则
+    itemsets,rules = apriori(transaction,min_support,min_confidence)
+    #itemsets1 = dict(sorted(itemsets.items(), key=operator.itemgetter(1)))
+    print("频繁项集：", itemsets)
+    print("关联规则：", rules)
+    end = time.time()
+    print('用时：',end-start)
+    
+if __name__ == "__main__":
+    # 数据加载
+    data = pd.read_csv('./Market_Basket_Optimisation.csv',header=None)
+    #print(data.head())
+    #print(data.describe())
+    #print(data.shape)
+    rule1(data,0.05,0.3)
+    rule1(data,0.02,0.4)
+
